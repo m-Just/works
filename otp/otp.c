@@ -7,6 +7,17 @@
 int encrypt(int text, int buff);
 int getKey(int* buff);
 
+/* One Time Pad Encrypter dev (using PRNG)
+ * usage:  ./otp [origin_file] [output_file] [key_file]
+ * To decrypt a file, encrypt the encrypted file.
+ * 
+ * NOTICE: this encrypter is not safe, do not use in
+ * formal encryption, because the SEED can be found
+ * by brute force search.
+ *
+ * by m.Just 2015-08-11
+ */
+
 int main(int* argv, char* argc[]) {
 	FILE* plain = fopen(argc[1], "r");
 	FILE* ciper = fopen(argc[2], "w");
@@ -24,7 +35,7 @@ int main(int* argv, char* argc[]) {
 	return 0;
 }
 
-int encrypt(int text, int key) {
+int encrypt(int text, int key) { 
 	return text ^ key;
 	return 0;
 }
