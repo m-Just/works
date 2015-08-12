@@ -3,13 +3,8 @@
  * Copyright(2015) m.Just
  */
 
-#define VERSION "0.2"
+#define VERSION "0.3"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <math.h>
-#include <string.h>
 #include "testfile_gen.h"
 
 void itoa(int in, char* buf) {
@@ -64,11 +59,14 @@ void autogen(FILE* out_file, int caseNum) {
 	char dformat;
 	char out_format[10]; out_format[0] = '%'; out_format[1] = '\0';
 
+	// Possible enhancement:
+	// put format & seperator option into general setting before `autogen'
+	// there is no need to inquire on every case
 	label_format_option:
 	printf(">>>Output format:\n");
 	printf("1. Integer\n");
 	printf("2. Floating number\n");
-	printf("3. Character\n");
+	printf("3. Character (ASCII)\n");  // how to output UNICODE character??
 	printf("? ");
 	scanf("%d", &format); getchar();
 
@@ -79,6 +77,24 @@ void autogen(FILE* out_file, int caseNum) {
 		default: printf("Invalid format!\n"); goto label_format_option;
 	}
 
+	char sep;
+	label_seperator:
+	printf(">>>Seperate each elements by:\n");
+	printf("0. Do not seperate\n");
+	printf("1. Blank\n");
+	printf("2. New line\n");
+	printf("3. Tab\n");
+	// customize sepertor ?
+	printf("? ");
+	sep = getchar(); getchar();
+	switch (sep) {
+		case '0': sep = '\0'; break;
+		case '1': sep = ' ';  break;
+		case '2': sep = '\n'; break;
+		case '3': sep = '\t'; break;
+		default: printf("Invalid option!\n"); goto label_seperator;
+	}
+
 	int len;
 	if (format <= 2) {
 		if (format == 2) {
@@ -86,7 +102,7 @@ void autogen(FILE* out_file, int caseNum) {
 			char digits_char[2]; memset(digits_char, 0, sizeof(char)*2); // at most 99?
 			do {	printf("How many decimal digits for output? ");
 				scanf("%d", &digits); getchar();
-			} while (digits < 0 && printf("Number of digits cannot be smaller than 0\n"));
+			} while (digits < 0 && printf("Number of digits cannot be smaller than 0.\n"));
 			out_format[len] = '.'; out_format[len+1] = '\0';
 			itoa(digits, digits_char);      
 			if (digits > 0) strcat(out_format, digits_char);
@@ -97,10 +113,22 @@ void autogen(FILE* out_file, int caseNum) {
 		for (i = 0; i < numOfElements; i++) {
 			if (format == 1) fprintf(out_file, out_format, (int)(seq[i]+0.5));
 			else 		 fprintf(out_file, out_format, seq[i]); 
-			if (i < numOfElements-1) fputc(' ',  out_file); else fputc('\n', out_file);
+			if (i < numOfElements-1) { 
+				if ('\0' != sep) fputc(sep, out_file);
+			} else 	fputc('\n', out_file);
 		}	
 	} else
-	if (format == 3) { printf("%s\n", seq); } // char format output... unfinished
+	if (format == 3) {
+		out_format[2] = out_format[1];
+		out_format[1] = dformat;	
+		for (i = 0; i < numOfElements; i++) {
+			fprintf(out_file, out_format, (char)seq[i]); 
+			if (i < numOfElements-1) { 
+				if ('\0' != sep) fputc(sep, out_file);
+			} else 	fputc('\n', out_file);
+		}
+	} 
+	
 	free(seq);
 }
 
@@ -142,20 +170,20 @@ void geomtrcPro(double* seq, int n) {
 
 void randSeq(double* seq, int n) {
 	double upplim, lwrlim;
-	int digits;
 	char tmp;
 
 	do {
 		printf("Lower limit? "); scanf("%lf", &lwrlim); getchar();
 		printf("Upper limit? "); scanf("%lf", &upplim); getchar();
-		do { printf("Decimal digits? "); scanf("%d", &digits); tmp = getchar(); }   // long digits exception
-		while ((tmp != '\n' || digits < 0) && printf("Number of decimal digits must be a non-negative integer\n"));
-	} while (upplim < lwrlim && printf("Upper limit cannot be smaller than lower limit!\n"));
+		// do { printf("How many decimal digits? "); scanf("%d", &digits); tmp = getchar(); }   // long digits exception
+		// while ((tmp != '\n' || digits < 0) && printf("Number of decimal digits must be a non-negative integer\n"));
+	} while ((upplim < lwrlim && printf("Upper limit cannot be smaller than lower limit!\n")) ||
+		 (upplim-lwrlim >= RAND_MAX && printf("The range is too large!\n")));
 
 	int i;
-	srand((unsigned int) time(NULL));
+	srand((unsigned int)time(NULL));  // use current time as seed
 	for (i = 0; i < n; i++) {
-		double r = rand() * pow(0.1, digits);
+		double r = (double)rand() + (double)rand() / RAND_MAX;
 		if (upplim == lwrlim) seq[i] = upplim;
 		else seq[i] = r - (int)(r/(upplim-lwrlim))*(upplim-lwrlim) + lwrlim;  // fmod: mod of floating num
 	}

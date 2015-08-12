@@ -32,6 +32,11 @@ int main(int* argv, char* argc[]) {
 		chtr = (char)encrypt((int)ch, key); 
 		fprintf(ciper, "%c", chtr);
 	}
+
+	fclose(plain);
+	fclose(ciper);
+	fclose(pskey);
+
 	return 0;
 }
 
