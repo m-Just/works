@@ -3,7 +3,7 @@
  * Copyright(2015) m.Just
  */
 
-#define VERSION "0.3"
+#define VERSION "0.4"
 
 #include "testfile_gen.h"
 
@@ -54,10 +54,19 @@ void autogen(FILE* out_file, int caseNum) {
 	}
 	
 	/* Output */
-	int i; 
-	int format;
-	char dformat;
-	char out_format[10]; out_format[0] = '%'; out_format[1] = '\0';
+	int i;
+	static int lastmode;
+	static int format;
+	static char dformat;
+	static char out_format[10]; 
+	
+	static int format_copy;
+	if (format_copy > 0) {
+		format_copy++;	
+		goto label_seperator;	
+	}
+
+	out_format[0] = '%'; out_format[1] = '\0';
 
 	// Possible enhancement:
 	// put format & seperator option into general setting before `autogen'
@@ -77,14 +86,35 @@ void autogen(FILE* out_file, int caseNum) {
 		default: printf("Invalid format!\n"); goto label_format_option;
 	}
 
-	char sep;
+	int len;
+	if (format == 2) {
+		int digits; len = strlen(out_format);
+		char digits_char[2]; memset(digits_char, 0, sizeof(char)*2); // at most 99?
+		do {	printf("How many decimal digits for output? ");
+			scanf("%d", &digits); getchar();
+		} while (digits < 0 && printf("Number of digits cannot be smaller than 0.\n"));
+		out_format[len] = '.'; out_format[len+1] = '\0';
+		itoa(digits, digits_char);      
+		if (digits > 0) strcat(out_format, digits_char);
+	}
+
+	printf("Apply this format to all the following cases? (y/n) ");
+	char temp = getchar();
+	if (temp == 'y' || temp == 'Y') format_copy = 1; getchar();
+
+
+
+	static char sep;
+	static int sep_copy;
 	label_seperator:
+	if (sep_copy > 0) goto label_print;
+
 	printf(">>>Seperate each elements by:\n");
 	printf("0. Do not seperate\n");
 	printf("1. Blank\n");
 	printf("2. New line\n");
 	printf("3. Tab\n");
-	// customize sepertor ?
+	// customize seperator ?
 	printf("? ");
 	sep = getchar(); getchar();
 	switch (sep) {
@@ -94,22 +124,17 @@ void autogen(FILE* out_file, int caseNum) {
 		case '3': sep = '\t'; break;
 		default: printf("Invalid option!\n"); goto label_seperator;
 	}
+	printf("Apply this seperator to all the following cases? (y/n) ");
+	temp = getchar();
+	if (temp == 'y' || temp == 'Y') sep_copy = 1; getchar();
 
-	int len;
+	label_print:
 	if (format <= 2) {
-		if (format == 2) {
-			int digits; len = strlen(out_format);
-			char digits_char[2]; memset(digits_char, 0, sizeof(char)*2); // at most 99?
-			do {	printf("How many decimal digits for output? ");
-				scanf("%d", &digits); getchar();
-			} while (digits < 0 && printf("Number of digits cannot be smaller than 0.\n"));
-			out_format[len] = '.'; out_format[len+1] = '\0';
-			itoa(digits, digits_char);      
-			if (digits > 0) strcat(out_format, digits_char);
+		if (format_copy < 2) {
+			len = strlen(out_format);
+			out_format[len] = dformat;
+			out_format[len+1] = '\0';
 		}
-		len = strlen(out_format);
-		out_format[len] = dformat;
-		out_format[len+1] = '\0';
 		for (i = 0; i < numOfElements; i++) {
 			if (format == 1) fprintf(out_file, out_format, (int)(seq[i]+0.5));
 			else 		 fprintf(out_file, out_format, seq[i]); 
@@ -119,8 +144,10 @@ void autogen(FILE* out_file, int caseNum) {
 		}	
 	} else
 	if (format == 3) {
-		out_format[2] = out_format[1];
-		out_format[1] = dformat;	
+		if (format_copy < 2) {
+			out_format[2] = out_format[1];
+			out_format[1] = dformat;	
+		}
 		for (i = 0; i < numOfElements; i++) {
 			fprintf(out_file, out_format, (char)seq[i]); 
 			if (i < numOfElements-1) { 
@@ -128,7 +155,7 @@ void autogen(FILE* out_file, int caseNum) {
 			} else 	fputc('\n', out_file);
 		}
 	} 
-	
+
 	free(seq);
 }
 
@@ -227,6 +254,8 @@ int main(int agrc, char* agrv[]) {
 	for (i = 1; i <= numOfCases; i++) {
 		printf("Case#%d auto-generate?(y/n) ", i);
 		if ('y' == getchar() & '\n' == getchar()) autogen(out_file, i);
+		
+		/* manual input */
 		else {
 			printf("The input for test case#%d: ($ for the end of input)\n", i);
 			while (1) {

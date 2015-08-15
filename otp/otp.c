@@ -7,7 +7,8 @@
 int encrypt(int text, int buff);
 int getKey(int* buff);
 
-/* One Time Pad Encrypter dev (using PRNG)
+/*
+ * One Time Pad Encrypter dev (using PRNG)
  * usage:  ./otp [origin_file] [output_file] [key_file]
  * To decrypt a file, encrypt the encrypted file.
  * 
